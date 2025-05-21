@@ -170,12 +170,21 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
         setPreviewData(preview);
         setIsProcessing(false);
         
-        // Se encontrou ambas as colunas automaticamente, prossegue para preview
-        if (nameColumnIndex !== -1 && phoneColumnIndex !== -1) {
-          validateAndMapContacts();
+        // Seleciona automaticamente as colunas encontradas
+        if (nameColumnIndex !== -1) {
+          setNameColumn(headers[nameColumnIndex]);
         } else {
-          setStep('map');
+          setNameColumn(headers[0]); // Seleciona a primeira coluna como nome se não encontrar
         }
+        
+        if (phoneColumnIndex !== -1) {
+          setPhoneColumn(headers[phoneColumnIndex]);
+        } else {
+          setPhoneColumn(headers[1]); // Seleciona a segunda coluna como telefone se não encontrar
+        }
+        
+        // Prossegue direto para preview
+        validateAndMapContacts();
 
       } catch (error) {
         setIsProcessing(false);
