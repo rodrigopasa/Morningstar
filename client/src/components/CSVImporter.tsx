@@ -92,13 +92,27 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
   const processCSV = (csvFile: File) => {
     setIsProcessing(true);
     
+    // Processar em chunks para arquivos grandes
+    const CHUNK_SIZE = 1024 * 1024; // 1MB por chunk
+    let offset = 0;
+    const chunks: string[] = [];
+    
     const reader = new FileReader();
     
     reader.onload = (event) => {
       try {
-        const csv = event.target?.result as string;
+        chunks.push(event.target?.result as string);
         
-        // Dividir o CSV em linhas
+        if (offset < csvFile.size) {
+          // Continuar lendo o próximo chunk
+          const slice = csvFile.slice(offset, offset + CHUNK_SIZE);
+          offset += CHUNK_SIZE;
+          reader.readAsText(slice);
+          return;
+        }
+        
+        // Processar todos os chunks
+        const csv = chunks.join('');
         const lines = csv.split(/\\r?\\n/).filter(line => line.trim().length > 0);
         
         if (lines.length === 0) {
@@ -442,17 +456,17 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
               </div>
             )}
             
-            <div className="border rounded-md overflow-x-auto max-h-[400px]">
-              <Table className="min-w-full">
-                <TableHeader>
+            <div className="border rounded-md overflow-x-auto max-h-[400px] bg-background">
+              <Table className="min-w-full table-fixed">
+                <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Número</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[40%]">Nome</TableHead>
+                    <TableHead className="w-[35%]">Número</TableHead>
+                    <TableHead className="w-[25%]">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {contacts.slice(0, 100).map((contact, index) => (
+                  {contacts.map((contact, index) => (
                     <TableRow key={index}>
                       <TableCell>{contact.name}</TableCell>
                       <TableCell>{contact.phoneNumber}</TableCell>
@@ -543,7 +557,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
           Importar Contatos CSV
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[800px] max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[800px] max-h-[85vh] overflow-y-auto bg-background">
         <DialogHeader>
           <DialogTitle>Importar Contatos de CSV</DialogTitle>
           <DialogDescription>
