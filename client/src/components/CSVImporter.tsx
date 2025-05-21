@@ -31,6 +31,7 @@ import {
 import { FileUp, Upload, FileQuestion, Check, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface CSVImporterProps {
   onComplete: (contacts: ContactImport[]) => void;
@@ -125,7 +126,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
 
         const delimiter = detectDelimiter(headerLine);
         const headers = headerLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
-        
+
         // Tentar identificar automaticamente as colunas de nome e telefone
         const nameColumnIndex = headers.findIndex(h => {
           const normalized = h.toLowerCase().trim();
@@ -136,7 +137,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
                  normalized.includes('nome') ||
                  normalized.includes('name');
         });
-        
+
         const phoneColumnIndex = headers.findIndex(h => {
           const normalized = h.toLowerCase().trim();
           return normalized === 'telefone' ||
@@ -155,7 +156,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
         if (nameColumnIndex !== -1) {
           setNameColumn(headers[nameColumnIndex]);
         }
-        
+
         if (phoneColumnIndex !== -1) {
           setPhoneColumn(headers[phoneColumnIndex]);
         }
@@ -169,20 +170,20 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
         setColumns(headers);
         setPreviewData(preview);
         setIsProcessing(false);
-        
+
         // Seleciona automaticamente as colunas encontradas
         if (nameColumnIndex !== -1) {
           setNameColumn(headers[nameColumnIndex]);
         } else {
           setNameColumn(headers[0]); // Seleciona a primeira coluna como nome se não encontrar
         }
-        
+
         if (phoneColumnIndex !== -1) {
           setPhoneColumn(headers[phoneColumnIndex]);
         } else {
           setPhoneColumn(headers[1]); // Seleciona a segunda coluna como telefone se não encontrar
         }
-        
+
         // Prossegue direto para preview
         validateAndMapContacts();
 
@@ -601,13 +602,56 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[800px] max-h-[85vh] overflow-y-auto bg-background">
         <DialogHeader>
-          <DialogTitle>Importar Contatos de CSV</DialogTitle>
+          <DialogTitle>Importar Contatos</DialogTitle>
           <DialogDescription>
-            Importe contatos de um arquivo CSV para envio em massa de mensagens.
+            Importe contatos de um arquivo CSV ou insira diretamente os números de telefone para envio em massa de mensagens.
           </DialogDescription>
         </DialogHeader>
 
-        {renderStep()}
+        <Tabs defaultValue="upload" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="upload">Upload CSV</TabsTrigger>
+            <TabsTrigger value="direct">Entrada Direta</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="upload">
+            {renderStep()}
+          </TabsContent>
+
+          <TabsContent value="direct">
+            <div className="space-y-4">
+              <div className="bg-white p-3 rounded-md shadow-sm border border-gray-100">
+                <label className="block text-sm font-medium text-[hsl(var(--whatsapp-secondary))] mb-2">
+                  Cole os números (um por linha)
+                </label>
+                <textarea
+                  className="w-full h-40 p-2 border rounded-md"
+                  placeholder="55999999999&#10;55888888888&#10;55777777777"
+                  onChange={(e) => {
+                    const numbers = e.target.value
+                      .split('\n')
+                      .map(n => n.trim())
+                      .filter(n => n.length > 0);
+
+                    const contacts = numbers.map(phoneNumber => ({
+                      name: phoneNumber,
+                      phoneNumber,
+                      isValid: phoneNumber.length >= 12
+                    }));
+
+                    setContacts(contacts);
+                    if (contacts.length > 0) {
+                      setStep('preview');
+                    }
+                  }}
+                />
+                <p className="text-xs text-gray-500 mt-1 italic">
+                  Inclua o código do país (Ex: 55 para Brasil) - Máximo 100 números por vez
+                </p>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
 
         <DialogFooter>
           {renderFooter()}
