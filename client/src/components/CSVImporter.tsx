@@ -127,17 +127,30 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
         const headers = headerLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
         
         // Tentar identificar automaticamente as colunas de nome e telefone
-        const nameColumnIndex = headers.findIndex(h => 
-          h.toLowerCase().includes('nome') || 
-          h.toLowerCase().includes('name')
-        );
+        const nameColumnIndex = headers.findIndex(h => {
+          const normalized = h.toLowerCase().trim();
+          return normalized === 'nome' || 
+                 normalized === 'name' ||
+                 normalized === 'cliente' ||
+                 normalized === 'contato' ||
+                 normalized.includes('nome') ||
+                 normalized.includes('name');
+        });
         
-        const phoneColumnIndex = headers.findIndex(h => 
-          h.toLowerCase().includes('telefone') || 
-          h.toLowerCase().includes('phone') || 
-          h.toLowerCase().includes('celular') || 
-          h.toLowerCase().includes('whatsapp')
-        );
+        const phoneColumnIndex = headers.findIndex(h => {
+          const normalized = h.toLowerCase().trim();
+          return normalized === 'telefone' ||
+                 normalized === 'phone' ||
+                 normalized === 'celular' ||
+                 normalized === 'whatsapp' ||
+                 normalized === 'numero' ||
+                 normalized === 'number' ||
+                 normalized === 'tel' ||
+                 normalized.includes('telefone') ||
+                 normalized.includes('phone') ||
+                 normalized.includes('celular') ||
+                 normalized.includes('whatsapp');
+        });
 
         if (nameColumnIndex !== -1) {
           setNameColumn(headers[nameColumnIndex]);
