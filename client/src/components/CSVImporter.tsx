@@ -72,9 +72,9 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
-    
+
     setFile(selectedFile);
-    
+
     // Validar se é um arquivo CSV
     if (selectedFile.type !== 'text/csv' && !selectedFile.name.endsWith('.csv')) {
       toast({
@@ -84,52 +84,52 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
       });
       return;
     }
-    
+
     // Iniciar processamento do arquivo
     processCSV(selectedFile);
   };
-  
+
   const processCSV = (csvFile: File) => {
     setIsProcessing(true);
-    
+
     const reader = new FileReader();
-    
+
     reader.onload = (event) => {
       try {
         const csv = event.target?.result as string;
-        
+
         // Dividir o CSV em linhas
         const lines = csv.split(/\\r?\\n/).filter(line => line.trim().length > 0);
-        
+
         if (lines.length === 0) {
           throw new Error("Arquivo CSV vazio");
         }
-        
+
         // Se existir BOM (Byte Order Mark) no inicio do arquivo, remover
         let headerLine = lines[0];
         if (headerLine.startsWith('\\ufeff')) {
           headerLine = headerLine.substring(1);
           lines[0] = headerLine;
         }
-        
+
         // Detectar o delimitador (vírgula, ponto e vírgula, tab)
         const delimiter = detectDelimiter(headerLine);
-        
+
         // Extrair cabeçalhos (nomes das colunas)
         const headers = headerLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
-        
+
         // Criar preview dos dados
         const preview: string[][] = [];
         for (let i = 0; i < Math.min(5, lines.length); i++) {
           const rowData = lines[i].split(delimiter).map(cell => cell.trim().replace(/^"|"$/g, ''));
           preview.push(rowData);
         }
-        
+
         setColumns(headers);
         setPreviewData(preview);
         setIsProcessing(false);
         setStep('map');
-        
+
       } catch (error) {
         setIsProcessing(false);
         console.error("Erro ao processar CSV:", error);
@@ -140,7 +140,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
         });
       }
     };
-    
+
     reader.onerror = () => {
       setIsProcessing(false);
       toast({
@@ -149,15 +149,15 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
         variant: "destructive"
       });
     };
-    
+
     reader.readAsText(csvFile);
   };
-  
+
   const detectDelimiter = (headerLine: string): string => {
     const delimiters = [',', ';', '\\t'];
     let bestDelimiter = ',';
     let maxCount = 0;
-    
+
     for (const delimiter of delimiters) {
       const count = (headerLine.match(new RegExp(delimiter, 'g')) || []).length;
       if (count > maxCount) {
@@ -165,10 +165,10 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
         bestDelimiter = delimiter;
       }
     }
-    
+
     return bestDelimiter;
   };
-  
+
   const validateAndMapContacts = () => {
     if (!nameColumn || !phoneColumn) {
       toast({
@@ -178,78 +178,78 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
       });
       return;
     }
-    
+
     setIsProcessing(true);
-    
+
     try {
       const reader = new FileReader();
-      
+
       reader.onload = (event) => {
         try {
           const csv = event.target?.result as string;
-          
+
           // Dividir o CSV em linhas
           const lines = csv.split(/\\r?\\n/).filter(line => line.trim().length > 0);
-          
+
           // Detectar o delimitador
           const delimiter = detectDelimiter(lines[0]);
-          
+
           // Extrair cabeçalhos
           let headers = lines[0].split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
-          
+
           // Se existir BOM (Byte Order Mark) no inicio do arquivo, remover
           if (headers[0].startsWith('\\ufeff')) {
             headers[0] = headers[0].substring(1);
           }
-          
+
           // Encontrar índices das colunas selecionadas
           const nameIndex = headers.indexOf(nameColumn);
           const phoneIndex = headers.indexOf(phoneColumn);
-          
+
           if (nameIndex === -1 || phoneIndex === -1) {
             throw new Error("Colunas selecionadas não encontradas");
           }
-          
+
           // Extrair e validar contatos
           const mappedContacts: ContactImport[] = [];
-          
+
           for (let i = 1; i < lines.length; i++) {
             const line = lines[i];
-            
+
             if (!line.trim()) continue;
-            
+
             const values = line.split(delimiter).map(cell => cell.trim().replace(/^"|"$/g, ''));
-            
+
             if (values.length <= Math.max(nameIndex, phoneIndex)) {
               console.warn(`Linha ${i+1} inválida, possui menos colunas que o esperado`);
               continue;
             }
-            
+
             const name = values[nameIndex];
             let phoneNumber = values[phoneIndex];
-            
+
             // Validar e formatar número de telefone
             phoneNumber = phoneNumber.replace(/\\D/g, '');
-            
+
             // Verificar se já tem código do país, senão adiciona 55 (Brasil)
             if (phoneNumber.length <= 12 && !phoneNumber.startsWith('55')) {
               phoneNumber = '55' + phoneNumber;
             }
-            
+
             // Verificar se o número é válido (pelo menos 10 dígitos após o código do país)
             const isValid = phoneNumber.length >= 12;
-            
+
             mappedContacts.push({
               name,
               phoneNumber,
               isValid
             });
           }
-          
+
           setContacts(mappedContacts);
           setIsProcessing(false);
           setStep('preview');
-          
+
         } catch (error) {
           setIsProcessing(false);
           console.error("Erro ao mapear contatos:", error);
@@ -260,7 +260,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
           });
         }
       };
-      
+
       reader.onerror = () => {
         setIsProcessing(false);
         toast({
@@ -269,9 +269,9 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
           variant: "destructive"
         });
       };
-      
+
       reader.readAsText(file as Blob);
-      
+
     } catch (error) {
       setIsProcessing(false);
       toast({
@@ -281,11 +281,11 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
       });
     }
   };
-  
+
   const handleConfirm = () => {
     // Filtrar apenas contatos válidos
     const validContacts = contacts.filter(contact => contact.isValid);
-    
+
     if (validContacts.length === 0) {
       toast({
         title: "Nenhum contato válido",
@@ -294,20 +294,20 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
       });
       return;
     }
-    
+
     // Chamar a função de callback com os contatos importados
     onComplete(validContacts);
-    
+
     // Resetar o estado e fechar o modal
     toast({
       title: "Importação concluída",
       description: `${validContacts.length} contato(s) importado(s) com sucesso.`,
     });
-    
+
     resetState();
     setOpen(false);
   };
-  
+
   const renderStep = () => {
     switch (step) {
       case 'upload':
@@ -338,12 +338,12 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
             </div>
           </div>
         );
-        
+
       case 'map':
         return (
           <div className="space-y-6 py-6">
             <h3 className="text-lg font-medium mb-4">Mapear colunas</h3>
-            
+
             {previewData.length > 0 && (
               <div className="border rounded-md overflow-x-auto mb-6">
                 <Table>
@@ -367,7 +367,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
                 </Table>
               </div>
             )}
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name-column">Coluna de Nome</Label>
@@ -376,7 +376,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
                     <SelectValue placeholder="Selecione a coluna" />
                   </SelectTrigger>
                   <SelectContent>
-                    {columns.map((column, index) => (
+                    {columns.filter(column => column.trim()).map((column, index) => (
                       <SelectItem key={index} value={column}>
                         {column}
                       </SelectItem>
@@ -384,7 +384,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="phone-column">Coluna de Telefone</Label>
                 <Select value={phoneColumn} onValueChange={setPhoneColumn}>
@@ -392,7 +392,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
                     <SelectValue placeholder="Selecione a coluna" />
                   </SelectTrigger>
                   <SelectContent>
-                    {columns.map((column, index) => (
+                    {columns.filter(column => column.trim()).map((column, index) => (
                       <SelectItem key={index} value={column}>
                         {column}
                       </SelectItem>
@@ -401,7 +401,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
                 </Select>
               </div>
             </div>
-            
+
             <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md">
               <div className="flex gap-2">
                 <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -415,11 +415,11 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
             </div>
           </div>
         );
-        
+
       case 'preview':
         const validCount = contacts.filter(c => c.isValid).length;
         const invalidCount = contacts.length - validCount;
-        
+
         return (
           <div className="space-y-6 py-6">
             <div className="flex items-center justify-between mb-4">
@@ -430,7 +430,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
                 Inválidos: <span className="font-semibold text-red-600">{invalidCount}</span>
               </div>
             </div>
-            
+
             {invalidCount > 0 && (
               <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-4">
                 <div className="flex">
@@ -441,7 +441,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
                 </div>
               </div>
             )}
-            
+
             <div className="border rounded-md overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -471,7 +471,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
                   ))}
                 </TableBody>
               </Table>
-              
+
               {contacts.length > 100 && (
                 <div className="p-2 text-center text-sm text-gray-500">
                   Mostrando 100 de {contacts.length} contatos
@@ -480,12 +480,12 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
             </div>
           </div>
         );
-        
+
       default:
         return null;
     }
   };
-  
+
   const renderFooter = () => {
     switch (step) {
       case 'upload':
@@ -494,7 +494,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
             Cancelar
           </Button>
         );
-        
+
       case 'map':
         return (
           <>
@@ -509,7 +509,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
             </Button>
           </>
         );
-        
+
       case 'preview':
         return (
           <>
@@ -524,7 +524,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
             </Button>
           </>
         );
-        
+
       default:
         return null;
     }
@@ -550,9 +550,9 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
             Importe contatos de um arquivo CSV para envio em massa de mensagens.
           </DialogDescription>
         </DialogHeader>
-        
+
         {renderStep()}
-        
+
         <DialogFooter>
           {renderFooter()}
         </DialogFooter>
