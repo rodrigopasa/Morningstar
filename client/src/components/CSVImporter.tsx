@@ -163,8 +163,6 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
         } else {
           setStep('map');
         }
-          throw new Error("Arquivo CSV vazio");
-        }
 
       } catch (error) {
         setIsProcessing(false);
