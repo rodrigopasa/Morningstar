@@ -166,31 +166,6 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
           throw new Error("Arquivo CSV vazio");
         }
 
-        // Se existir BOM (Byte Order Mark) no inicio do arquivo, remover
-        let headerLine = lines[0];
-        if (headerLine.startsWith('\\ufeff')) {
-          headerLine = headerLine.substring(1);
-          lines[0] = headerLine;
-        }
-
-        // Detectar o delimitador (vírgula, ponto e vírgula, tab)
-        const delimiter = detectDelimiter(headerLine);
-
-        // Extrair cabeçalhos (nomes das colunas)
-        const headers = headerLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
-
-        // Criar preview dos dados
-        const preview: string[][] = [];
-        for (let i = 0; i < Math.min(5, lines.length); i++) {
-          const rowData = lines[i].split(delimiter).map(cell => cell.trim().replace(/^"|"$/g, ''));
-          preview.push(rowData);
-        }
-
-        setColumns(headers);
-        setPreviewData(preview);
-        setIsProcessing(false);
-        setStep('map');
-
       } catch (error) {
         setIsProcessing(false);
         console.error("Erro ao processar CSV:", error);
