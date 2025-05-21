@@ -630,13 +630,13 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
                   onChange={(e) => {
                     const numbers = e.target.value
                       .split('\n')
-                      .map(n => n.trim())
+                      .map(n => n.trim().replace(/\D/g, ''))
                       .filter(n => n.length > 0);
 
                     const contacts = numbers.map(phoneNumber => ({
                       name: phoneNumber,
-                      phoneNumber,
-                      isValid: phoneNumber.length >= 12
+                      phoneNumber: phoneNumber.startsWith('55') ? phoneNumber : `55${phoneNumber}`,
+                      isValid: phoneNumber.length >= 10
                     }));
 
                     setContacts(contacts);
@@ -645,6 +645,20 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onComplete }) => {
                     }
                   }}
                 />
+                <Button 
+                  className="mt-4 w-full"
+                  onClick={() => {
+                    const validContacts = contacts.filter(c => c.isValid);
+                    if (validContacts.length > 0) {
+                      onComplete(validContacts);
+                      setOpen(false);
+                      resetState();
+                    }
+                  }}
+                  disabled={contacts.filter(c => c.isValid).length === 0}
+                >
+                  Enviar Mensagem ({contacts.filter(c => c.isValid).length} números)
+                </Button>
                 <p className="text-xs text-gray-500 mt-1 italic">
                   Inclua o código do país (Ex: 55 para Brasil) - Máximo 100 números por vez
                 </p>
